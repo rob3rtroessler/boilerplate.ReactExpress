@@ -1,61 +1,98 @@
 import React, { Component } from 'react';
+import * as d3 from "d3";
+
+// bootstrap
+import 'bootstrap/dist/css/bootstrap.min.css';
+import Container from 'react-bootstrap/Container';
+import Row from 'react-bootstrap/Row';
+import Col from 'react-bootstrap/Col';
+
+// css
 import './App.css';
 
-class App extends Component {
-    // Initialize state
-    state = { passwords: [] }
+import logo from './logo.svg';
 
-    // Fetch passwords after first mount
-    componentDidMount() {
-        this.getPasswords();
+// d3 components
+import MapVis from "./mapVis";
+import BrushVis from "./brushVis"
+
+
+class App extends Component {
+
+    constructor(props) {
+        super(props);
+        this.state = {
+            loading: true,
+            initData: [],
+            dataRange: [],
+            displayData: []
+        };
     }
 
-    getPasswords = () => {
-        // Get the passwords and store them in state
-        fetch('/api/passwords')
+    componentDidMount() {
+        // after component mounted, load data
+        this.loadData();
+    }
+
+    loadData(){
+        fetch('/api/loadData')
             .then(res => res.json())
-            .then(passwords => this.setState({ passwords }));
+            .then(data => console.log(data));
+    }
+
+    // callback function that enables communication with brush
+    setNewRange = (brushRange) => {
+        this.setState({dataRange: brushRange});
     };
 
-    render() {
-        const { passwords } = this.state;
+    componentDidUpdate(prevProps, prevState, snapshot) {
+        // when component updates, i.e. state changes (e.g. the range due to brushing), call filterData
+        this.filterData();
+    }
 
+    filterData(){
+        let filteredData = [];
+        this.setState({displayData: filteredData})
+    }
+
+    // prepare grid
+    render() {
         return (
             <div className="App">
-                {/* Render the passwords if we have them */}
-                {passwords.length ? (
-                    <div>
-                        <h1>5 Passwords.</h1>
-                        <ul className="passwords">
-                            {/*
-                Generally it's bad to use "index" as a key.
-                It's ok for this example because there will always
-                be the same number of passwords, and they never
-                change positions in the array.
-              */}
-                            {passwords.map((password, index) =>
-                                <li key={index}>
-                                    {password}
-                                </li>
-                            )}
-                        </ul>
-                        <button
-                            className="more"
-                            onClick={this.getPasswords}>
-                            Get More
-                        </button>
-                    </div>
-                ) : (
-                    // Render a helpful message otherwise
-                    <div>
-                        <h1>No passwords :(</h1>
-                        <button
-                            className="more"
-                            onClick={this.getPasswords}>
-                            Try Again?
-                        </button>
-                    </div>
-                )}
+
+                {/* wrapper */}
+                <Container fluid={true}>
+                    <Row style={{height: '100vh', padding: '1vh'}}>
+                        <Col lg={{span: 10, offset:1}} style={{background: '#d8d8d8', border: ' thin solid grey', borderRadius: '5px'}}>
+
+                            {/* header */}
+                            <Row id="header" className="justify-content-center">
+                                <div className="align-self-center">
+                                    <h1>Map, Scatter, Brush</h1>
+                                </div>
+                            </Row>
+
+                            {/* content */}
+                            <Row style={{height: '65vh'}}>
+                                <Col lg={7}>
+                                    <Row className="test"><MapVis data={this.state.displayData}/></Row>
+                                </Col>
+                                <Col lg={5}>
+                                    <Row className="test"><MapVis data={this.state.displayData}/></Row>
+                                </Col>
+                            </Row>
+
+                            {/* footer / brush */}
+                            <Row style={{height: '20vh'}}>
+                                <Col>
+                                    <Row style={{height: '17vh', marginTop: '2vh',  marginLeft: '0', marginRight: '0', background: 'lightgrey', border: 'thin solid grey', borderRadius: '5px'}}>
+                                        <BrushVis parentCallback={this.setNewRange}/>
+                                    </Row>
+                                </Col>
+                            </Row>
+                        </Col>
+                    </Row>
+                </Container>
             </div>
         );
     }
